@@ -118,6 +118,7 @@
                     <input type="password" id="passwordInput" placeholder="******" required>
                 </div>
                 <button type="submit" class="btn-login">SE CONNECTER</button>
+                                <a href="#" id="forgotPasswordLink" style="display: block; text-align: center; margin-top: 15px; color: #667eea; text-decoration: none; font-size: 14px;">Mot de passe oublié ?</a>
             </form>
         </div>
     </div>
@@ -196,6 +197,29 @@
                     invoices.map(inv => `<li>${inv.id} - ${inv.created_at}</li>`).join('') +
                     '</ul>';
             }
+
+                    // Gestion du mot de passe oublié
+        document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            
+            if (!email) {
+                alert('Veuillez entrer votre adresse email');
+                return;
+            }
+            
+            try {
+                const { error } = await sb.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/vanilla-evaluation-app/'
+                });
+                
+                if (error) throw error;
+                
+                alert('Un email de réinitialisation a été envoyé à ' + email);
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        });
         }
         
         // Vérifier si l'utilisateur est déjà connecté
