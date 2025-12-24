@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MADA Global Trading - Gestion Factures</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        #loginScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .login-container h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .login-container p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        #mainApp {
+            display: none;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn-logout {
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen">
+        <div class="login-container">
+            <h1>🌿 MADA Global Trading</h1>
+            <p>Gestion Factures - Cloud</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="emailInput" placeholder="votre@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de Passe</label>
+                    <input type="password" id="passwordInput" placeholder="******" required>
+                </div>
+                <button type="submit" class="btn-login">SE CONNECTER</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="mainApp">
+        <div class="header">
+            <h2>🌿 MADA Global Trading</h2>
+            <button id="logoutBtn" class="btn-logout">Déconnexion</button>
+        </div>
+        <div id="appContent">
+            <!-- Contenu principal de l'application -->
+        </div>
+    </div>
+    
+    <script>
+        const SUPABASE_URL = 'https://hpzlusunaaufiamamnqz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwemx1c3VuYWF1ZmlhbWFtbnF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3NzE0MTMsImV4cCI6MjA1MTM0NzQxM30.7mMxv20OqIsq7p9jVcaCZrx9LCsEL3Y8HRMt5CUm4S8';
+        
+        const { createClient } = supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let currentUser = null;
+        let invoices = [];
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                currentUser = data.user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                loadInvoices();
+            } catch (error) {
+                alert('Erreur de connexion: ' + error.message);
+            }
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await sb.auth.signOut();
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            currentUser = null;
+        });
+        
+        async function loadInvoices() {
+            try {
+                const { data, error } = await sb
+                    .from('invoices')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                invoices = data || [];
+                displayInvoices();
+            } catch (error) {
+                console.error('Erreur chargement factures:', error);
+            }
+        }
+        
+        function displayInvoices() {
+            const content = document.getElementById('appContent');
+            if (invoices.length === 0) {
+                content.innerHTML = '<p>Aucune facture trouvée</p>';
+            } else {
+                content.innerHTML = '<h3>Factures</h3><ul>' +
+                    invoices.map(inv => `<li>${inv.id} - ${inv.created_at}</li>`).join('') +
+                    '</ul>';
+            }
+        }
+        
+        // Vérifier si l'utilisateur est déjà connecté
+        sb.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                loadInvoices();
+            }
+        });
+    </script>
+</body>
+</html>
