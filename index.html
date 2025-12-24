@@ -142,6 +142,9 @@
         
         let currentUser = null;
         let invoices = [];
+
+                // Attendre que le DOM soit chargé
+        document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -220,9 +223,9 @@
                 alert('Erreur: ' + error.message);
             }
         });
-        }
         
-        // Vérifier si l'utilisateur est déjà connecté
+        228
+            est déjà connecté
         sb.auth.getSession().then(({ data: { session } }) => {
             if (session) {
                 currentUser = session.user;
@@ -232,5 +235,7 @@
             }
         });
     </script>
-</body>
-</html>
+</body>226
+226226
+</ht204
+  ml>
